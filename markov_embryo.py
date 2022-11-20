@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 
 from embrio import Embryo
 
-
+#takes the embryo vector and turns it into a 2D grid for plotting
 def unflatten(arr, n, m):
     output = np.zeros((n,m))
 
@@ -14,6 +14,9 @@ def unflatten(arr, n, m):
 
     return output
 
+#grows the embryo by multiplying the current state vector times the markov matrix,
+#but only the squares adjacent to 'alive' squares so that it 'grows'. Also is more
+#efficient. It is assumed that markov_mat is either 0s or 1s
 def grow(arr, n, m, markov_mat):
 
     new_cells = []
@@ -64,6 +67,7 @@ def grow(arr, n, m, markov_mat):
         if arr[ii] == 1:
             append_maybe(ii)
 
+            #calculate the values for only the new cells
             for cell in new_cells:
                 arr2[int(cell)] = markov_mat[int(cell),:]@arr
 
@@ -87,6 +91,7 @@ def main():
 
     embryo = np.zeros(n*m)
 
+    #inital embryo
     embryo[5050] = 1
     embryo[5051] = 1
     embryo[4950] = 1
@@ -100,8 +105,11 @@ def main():
 
 
             print(jj)
+            #iterate on the current embryo
             embryo = grow(embryo, n, m, markov_matrix)
+            #make sure the values are all between 0 and 1
             embryo = np.clip(embryo, 0, 1)
+            #make sure all value are 0 or 1
             embryo = np.round(embryo)
 
             animation_frames[jj] = 255.0*embryo
