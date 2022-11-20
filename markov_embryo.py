@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 import matplotlib.animation as animation
+from PIL import Image
 
 from embrio import Embryo
 
@@ -37,10 +38,13 @@ def grow(arr, n, m, markov_mat):
         left  = row*m + col - 1
         right = row*m + col + 1
 
+        #if above > 99 or below > 99 or left > 99 or right > 99:
+            #pdb.set_trace()
+
         if row == 0:
             if below not in new_cells:
                 new_cells.append(below)
-        elif row == n:
+        elif row == n-1:
             if above not in new_cells:
                 new_cells.append(above)
         else:
@@ -52,7 +56,7 @@ def grow(arr, n, m, markov_mat):
         if col == 0:
             if right not in new_cells:
                 new_cells.append(right)
-        elif col == m:
+        elif col == m-1:
             if left not in new_cells:
                 new_cells.append(left)
         else:
@@ -72,58 +76,83 @@ def grow(arr, n, m, markov_mat):
                 arr2[int(cell)] = markov_mat[int(cell),:]@arr
 
     return arr2
-                
-
-
 
 
 def main():
 
+    np.random.seed(100)
+
     #grid size
-    n = 100
-    m = 100
+    n = 10
+    m = 10
 
-    num_generations = 1
-
+    num_generations = 100
     num_growth_cycles = 20
+    num_contestants = 10
 
     markov_matrix = np.random.rand(n*m,n*m)*2 - 1
 
-    embryo = np.zeros(n*m)
-
+    embryo0 = np.zeros(n*m)
     #inital embryo
-    embryo[5050] = 1
-    embryo[5051] = 1
-    embryo[4950] = 1
-    embryo[5150] = 1
+    embryo0[0:10] = np.ones(10)
 
+    #get a final goal body shape from a .bmp file I made in ms paint
+    goal = np.array(Image.open('coral.bmp'), dtype = int).flatten()
+    goal = np.ones(n*m) - goal
+
+    errors = np.zeros(num_generations)
     for ii in range(num_generations):
 
-        animation_frames = np.zeros((num_growth_cycles, n*m))
+        new_matrices = np.zeros((num_contestants, n*m, n*m))
+        max_error = np.inf
+        max_error_index = 0
+        for kk in range(num_contestants):
+            new_matrices[kk] = markov_matrix + (np.random.rand(n*m, n*m)*2 - 1)
 
-        for jj in range(num_growth_cycles):
+            embryo = embryo0.copy()
+            for jj in range(num_growth_cycles):
+                print('generation {}, contestant {}, cycle {}, current max error {}'.format(ii, kk, jj, max_error))
+                
+                #iterate on the current embryo
+                embryo = grow(embryo, n, m, new_matrices[kk])
+                #make sure the values are all between 0 and 1
+                embryo = np.clip(embryo, 0, 1)
+                #make sure all value are 0 or 1
+                embryo = np.round(embryo)
 
+            error = np.linalg.norm(embryo-goal)
+            print(error)
+            if error < max_error:
+                max_error = error
+                max_error_index = kk
 
-            print(jj)
-            #iterate on the current embryo
-            embryo = grow(embryo, n, m, markov_matrix)
-            #make sure the values are all between 0 and 1
-            embryo = np.clip(embryo, 0, 1)
-            #make sure all value are 0 or 1
-            embryo = np.round(embryo)
+        markov_matrix = new_matrices[max_error_index]
+        errors[ii] = max_error
 
-            animation_frames[jj] = 255.0*embryo
+    print(errors)
+    animation_frames = np.zeros((num_growth_cycles, n*m))
+    embryo = embryo0.copy()
+    for jj in range(num_growth_cycles):
 
-        fig = plt.figure()
-        ax1 = fig.add_subplot(1,1,1)
+        #iterate on the current embryo
+        embryo = grow(embryo, n, m, markov_matrix)
+        #make sure the values are all between 0 and 1
+        embryo = np.clip(embryo, 0, 1)
+        #make sure all value are 0 or 1
+        embryo = np.round(embryo)
 
-        def animate(index):
-            ax1.clear()
-            ax1.imshow(unflatten(animation_frames[index,:],n,m))
-            ax1.set_title(index)
+        animation_frames[jj] = 255.0*embryo
 
-        ani = animation.FuncAnimation(fig, animate, interval=1000)
-        plt.show()
+    fig = plt.figure()
+    ax1 = fig.add_subplot(1,1,1)
+
+    def animate(index):
+        ax1.clear()
+        ax1.imshow(unflatten(animation_frames[index,:],n,m))
+        ax1.set_title(index)
+
+    ani = animation.FuncAnimation(fig, animate, interval=1000)
+    plt.show()
 
             
 
