@@ -3,6 +3,9 @@
 #include "embryo_sim.hpp"
 
 
+
+
+
 int main()
 {
     Embryo em = Embryo(100,100);
