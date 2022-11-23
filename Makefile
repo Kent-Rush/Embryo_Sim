@@ -1,6 +1,6 @@
 COMPILER      = g++ 
 OPTIONS       = -ansi -Wall -Wextra -g -std=c++17
-INCLUDES      = -I ./Eigen/ 
+INCLUDES      = -I ./Eigen/  -I ./Eigen/Dense
 LINKER_OPT    = -L/usr/lib -lstdc++ -lm
 
 all: embryo_sim
