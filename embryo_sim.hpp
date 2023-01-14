@@ -4,38 +4,82 @@
 using Eigen::Matrix;
 using Eigen::Vector;
 
+template<int ROWS, int COLS>
 class Embryo
 {
 public:
+    Eigen::Matrix<float,ROWS,COLS> embryo;
+    Eigen::Matrix<float,ROWS,COLS> identity_weights;
+    Eigen::Matrix<float,COLS-1,ROWS> left_weights;
+    Eigen::Matrix<float,COLS-1,ROWS> right_weights;
+    Eigen::Matrix<float,COLS,ROWS-1> up_weights;
+    Eigen::Matrix<float,COLS,ROWS-1> down_weights;
 
-    const int rows;
-    const int columns;
-    Eigen::VectorXd embryo_vector;
-    Eigen::MatrixXd markov_matrix;
-    int num_generations;
-    int num_growth_cycles;
-    int num_contestants;
+    //Each submatrix is COLSxCOLS
+    //AND there are ROWSxROWS submatrices
+    /****
+    I R 0 0 | U 0 0 0
+    L I R 0 | 0 U 0 0
+    0 L I R | 0 0 U 0
+    0 0 L I | 0 0 0 U
+    -----------------
+    D 0 0 0 | I R 0 0
+    0 D 0 0 | L I R 0
+    0 0 D 0 | 0 L I R
+    0 0 0 D | 0 0 L I
+    ****/
 
     bitmap_image img;
 
-    Embryo(const int rows_, const int columns_):
-        rows(rows_),
-        columns(columns_),
-        img(rows_,columns_)
+    Embryo():
+        img(ROWS,COLS)
     {
-        embryo_vector(rows_*columns_);
-        markov_matrix(rows_*columns_, rows_*columns_);
-        embryo_vector.setZero();
-        markov_matrix.Identity();
+        identity_weights.setOnes();
+        left_weights.setZero();
+        right_weights.setZero();
+        up_weights.setZero();
+        down_weights.setZero();
+    }
+
+    void step()
+    {
+        Eigen::Matrix<float,ROWS,COLS> new_embryo;
+        new_embryo.setZero();
+
+        for (int ii = 0; ii < ROWS; ii++)
+        {
+            for (int jj = 0; jj < COLS; jj++)
+            {
+                new_embryo(ii,jj) += identity_weights(ii,jj)*embryo(ii,jj);
+                if (jj != 0)
+                {
+                    new_embryo(ii,jj-1) += left_weights(ii-1,jj)*embryo(ii,jj-1);
+                }
+                if (jj != COLS-1)
+                {
+                    new_embryo(ii,jj) += right_weights(ii-1,jj)*embryo(ii,jj+1);
+                }
+                if (ii != 0)
+                {
+                    new_embryo(ii,jj) += up_weights(ii-1,jj)*embryo(ii-1,jj);
+                }
+                if (ii != ROWS-1)
+                {
+                    new_embryo(ii,jj) += up_weights(ii,jj)*embryo(ii+1,jj);
+                }
+            }
+        }
+
+        embryo = new_embryo;
     }
 
     void generateImage()
     {
-        for (int ii = 0; ii < rows; ii++)
+        for (int ii = 0; ii < ROWS; ii++)
         {
-            for (int jj = 0; jj < columns; jj++)
+            for (int jj = 0; jj < COLS; jj++)
             {
-                if (std::abs(embryo_vector[ii*columns+jj] - 1) < 1e-6 )
+                if (std::abs(embryo(ii,jj) < 1e-6 ))
                 {
                     img.set_pixel(ii, jj,255,255,255);
                 }

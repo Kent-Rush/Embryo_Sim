@@ -5,23 +5,26 @@
 
 int main()
 {
-    Embryo em = Embryo(100,100);
+    Embryo em = Embryo<100,100>();
 
-    em.embryo_vector.Random();
+    em.embryo = em.embryo.Random();
     
-    for (int ii = 0; ii < 100*100; ii++)
+    for (int ii = 0; ii < 100; ii++)
     {
-        if (em.embryo_vector[ii] > 1)
+        for (int jj = 0; jj < 100; jj++)
         {
-            em.embryo_vector[ii] = 1;
-        }
+            if (em.embryo(ii,jj) > 1)
+            {
+                em.embryo(ii,jj) = 1;
+            }
 
-        if (em.embryo_vector[ii] < 0)
-        {
-            em.embryo_vector[ii] = 0;
-        }
+            if (em.embryo(ii,jj) < 0)
+            {
+                em.embryo(ii,jj) = 0;
+            }
 
-        std::round(em.embryo_vector[ii]);
+            std::round(em.embryo(ii,jj));
+        }
     }
 
     em.generateImage();

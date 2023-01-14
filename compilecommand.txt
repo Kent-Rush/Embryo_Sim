@@ -1,0 +1,1 @@
+g++ -ansi -Wall -Wextra -g -std=c++17 -I ./Eigen/  -I ./Eigen/Dense -o embryo_sim embryo_sim.cpp -L/usr/lib -lstdc++ -lm
