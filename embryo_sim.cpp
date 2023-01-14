@@ -5,31 +5,38 @@
 
 int main()
 {
+    //Set rng seed
+    srand(1245125);
+
     Embryo em = Embryo<100,100>();
 
     em.embryo = em.embryo.Random();
-    
-    for (int ii = 0; ii < 100; ii++)
+    em.round();
+
+    Embryo mutant = Embryo<100,100>();
+
+    for (int ii = 40; ii < 60; ii++)
     {
-        for (int jj = 0; jj < 100; jj++)
+        for (int jj = 40; jj < 60; jj++)
         {
-            if (em.embryo(ii,jj) > 1)
-            {
-                em.embryo(ii,jj) = 1;
-            }
-
-            if (em.embryo(ii,jj) < 0)
-            {
-                em.embryo(ii,jj) = 0;
-            }
-
-            std::round(em.embryo(ii,jj));
+            mutant.embryo(ii,jj) = 1;
         }
     }
 
-    em.generateImage();
+    //mutant.randomize(0.1);
+    mutant.identity_weights.setZero();
+    mutant.up_weights.setOnes();
 
-    em.img.save_image("test.bmp");
+    for (int ii = 0; ii < 100; ii++)
+    {
+        em.generateImage();
+        em.img.save_image("frames/frame_"+std::to_string(ii)+".bmp");
+        em.step();
+
+        mutant.generateImage();
+        mutant.img.save_image("frames2/frame_"+std::to_string(ii)+".bmp");
+        mutant.step();
+    }
 
     return 0;
 }

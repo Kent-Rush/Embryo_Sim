@@ -10,10 +10,11 @@ class Embryo
 public:
     Eigen::Matrix<float,ROWS,COLS> embryo;
     Eigen::Matrix<float,ROWS,COLS> identity_weights;
-    Eigen::Matrix<float,COLS-1,ROWS> left_weights;
-    Eigen::Matrix<float,COLS-1,ROWS> right_weights;
-    Eigen::Matrix<float,COLS,ROWS-1> up_weights;
-    Eigen::Matrix<float,COLS,ROWS-1> down_weights;
+    Eigen::Matrix<float,COLS,ROWS-1> left_weights;
+    Eigen::Matrix<float,COLS,ROWS-1> right_weights;
+    Eigen::Matrix<float,COLS-1,ROWS> up_weights;
+    Eigen::Matrix<float,COLS-1,ROWS> down_weights;
+    float mutation_rate;
 
     //Each submatrix is COLSxCOLS
     //AND there are ROWSxROWS submatrices
@@ -32,6 +33,7 @@ public:
     bitmap_image img;
 
     Embryo():
+        mutation_rate(1e-2f),
         img(ROWS,COLS)
     {
         identity_weights.setOnes();
@@ -39,6 +41,46 @@ public:
         right_weights.setZero();
         up_weights.setZero();
         down_weights.setZero();
+    }
+
+    void randomize(float scale)
+    {
+        identity_weights = identity_weights.Random()*scale;
+        left_weights = left_weights.Random()*scale;
+        right_weights = right_weights.Random()*scale;
+        up_weights = up_weights.Random()*scale;
+        down_weights = down_weights.Random()*scale;
+    }
+
+    static void mutate(Embryo& embryo_out, Embryo& embryo_in)
+    {
+        float k = 1e-3;
+        embryo_out.identity_weights = embryo_in.identity_weights + embryo_in.identity_weights.Random()*k;
+        embryo_out.left_weights = embryo_in.left_weights + embryo_in.left_weights.Random()*k;
+        embryo_out.right_weights = embryo_in.right_weights + embryo_in.right_weights.Random()*k;
+        embryo_out.up_weights = embryo_in.up_weights + embryo_in.up_weights.Random()*k;
+        embryo_out.down_weights = embryo_in.down_weights + embryo_in.down_weights.Random()*k;
+    }
+
+    void round()
+    {
+        for (int ii = 0; ii < ROWS; ii++)
+        {
+            for (int jj = 0; jj < COLS; jj++)
+            {
+                if (embryo(ii,jj) > 1)
+                {
+                    embryo(ii,jj) = 1;
+                }
+
+                if (embryo(ii,jj) < 0)
+                {
+                    embryo(ii,jj) = 0;
+                }
+
+                embryo(ii,jj) = std::round(embryo(ii,jj));
+            }
+        }
     }
 
     void step()
@@ -50,18 +92,41 @@ public:
         {
             for (int jj = 0; jj < COLS; jj++)
             {
+                // bool none_adjacent = embryo(ii,jj) > 0.5;
+                // if (ii != 0)
+                // {
+                //     none_adjacent = embryo(ii-1,jj) > 0.5;
+                // }
+                // if (ii != ROWS-1)
+                // {
+                //     none_adjacent = embryo(ii+1,jj) > 0.5;
+                // }
+                // if (jj != 0)
+                // {
+                //     none_adjacent = embryo(ii,jj-1) > 0.5;
+                // }
+                // if (jj != COLS-1)
+                // {
+                //     none_adjacent = embryo(ii,jj+1) > 0.5;
+                // }
+
+                // if (none_adjacent)
+                // {
+                //     continue;
+                // }
+
                 new_embryo(ii,jj) += identity_weights(ii,jj)*embryo(ii,jj);
                 if (jj != 0)
                 {
-                    new_embryo(ii,jj-1) += left_weights(ii-1,jj)*embryo(ii,jj-1);
+                    new_embryo(ii,jj) += right_weights(ii,jj-1)*embryo(ii,jj-1);
                 }
                 if (jj != COLS-1)
                 {
-                    new_embryo(ii,jj) += right_weights(ii-1,jj)*embryo(ii,jj+1);
+                    new_embryo(ii,jj) += left_weights(ii,jj)*embryo(ii,jj+1);
                 }
                 if (ii != 0)
                 {
-                    new_embryo(ii,jj) += up_weights(ii-1,jj)*embryo(ii-1,jj);
+                    new_embryo(ii,jj) += down_weights(ii-1,jj)*embryo(ii-1,jj);
                 }
                 if (ii != ROWS-1)
                 {
@@ -71,6 +136,7 @@ public:
         }
 
         embryo = new_embryo;
+        round();
     }
 
     void generateImage()
@@ -81,11 +147,11 @@ public:
             {
                 if (std::abs(embryo(ii,jj) < 1e-6 ))
                 {
-                    img.set_pixel(ii, jj,255,255,255);
+                    img.set_pixel(jj, ii,255,255,255);
                 }
                 else
                 {
-                    img.set_pixel(ii, jj,0,0,0);
+                    img.set_pixel(jj, ii,0,0,0);
                 }
             }
         }
