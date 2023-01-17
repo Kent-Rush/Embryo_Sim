@@ -10,10 +10,10 @@ class Embryo
 public:
     Eigen::Matrix<float,ROWS,COLS> embryo;
     Eigen::Matrix<float,ROWS,COLS> identity_weights;
-    Eigen::Matrix<float,COLS,ROWS-1> left_weights;
-    Eigen::Matrix<float,COLS,ROWS-1> right_weights;
-    Eigen::Matrix<float,COLS-1,ROWS> up_weights;
-    Eigen::Matrix<float,COLS-1,ROWS> down_weights;
+    Eigen::Matrix<float,ROWS,COLS-1> left_weights;
+    Eigen::Matrix<float,ROWS,COLS-1> right_weights;
+    Eigen::Matrix<float,ROWS-1,COLS> up_weights;
+    Eigen::Matrix<float,ROWS-1,COLS> down_weights;
     float mutation_rate;
 
     //Each submatrix is COLSxCOLS
@@ -30,11 +30,10 @@ public:
     0 0 0 D | 0 0 L I
     ****/
 
-    bitmap_image img;
+    
 
     Embryo():
-        mutation_rate(1e-2f),
-        img(ROWS,COLS)
+        mutation_rate(1e-2f)
     {
         identity_weights.setOnes();
         left_weights.setZero();
@@ -118,19 +117,19 @@ public:
                 new_embryo(ii,jj) += identity_weights(ii,jj)*embryo(ii,jj);
                 if (jj != 0)
                 {
-                    new_embryo(ii,jj) += right_weights(ii,jj-1)*embryo(ii,jj-1);
+                    new_embryo(ii,jj) += left_weights(ii,jj-1)*embryo(ii,jj-1);
                 }
                 if (jj != COLS-1)
                 {
-                    new_embryo(ii,jj) += left_weights(ii,jj)*embryo(ii,jj+1);
+                    new_embryo(ii,jj) += right_weights(ii,jj)*embryo(ii,jj+1);
                 }
                 if (ii != 0)
                 {
-                    new_embryo(ii,jj) += down_weights(ii-1,jj)*embryo(ii-1,jj);
+                    new_embryo(ii,jj) += up_weights(ii-1,jj)*embryo(ii-1,jj);
                 }
                 if (ii != ROWS-1)
                 {
-                    new_embryo(ii,jj) += up_weights(ii,jj)*embryo(ii+1,jj);
+                    new_embryo(ii,jj) += down_weights(ii,jj)*embryo(ii+1,jj);
                 }
             }
         }
@@ -139,7 +138,7 @@ public:
         round();
     }
 
-    void generateImage()
+    void generateImage(bitmap_image& img)
     {
         for (int ii = 0; ii < ROWS; ii++)
         {
@@ -147,13 +146,40 @@ public:
             {
                 if (std::abs(embryo(ii,jj) < 1e-6 ))
                 {
-                    img.set_pixel(jj, ii,255,255,255);
+                    img.set_pixel(ii, jj,255,255,255);
                 }
                 else
                 {
-                    img.set_pixel(jj, ii,0,0,0);
+                    img.set_pixel(ii, jj,0,0,0);
                 }
             }
         }
     }
 };
+
+// template<int M, int N>
+// void splice(Embryo<M,N>& out, const Embryo<N,M>& em_a, const Embryo<N,M>& em_b)
+// {
+//     const int lr_max = M*(N-1);
+//     const int ud_max = (M-1)*N;
+//     const int i_max = M*N;
+
+//     size_t lr_index = Eigen::Rand::UniformIntGen<size_t>(0,M*(N-1));
+//     size_t ud_index = Eigen::Rand::UniformIntGen<size_t>(0,(M-1)*N);
+//     size_t i_index  = Eigen::Rand::UniformIntGen<size_t>(0,M*N);
+
+//     //I forgot these are not vectors q_q
+
+//     out.left_weights(Eigen::seq(0,lr_index)) = em_a.left_weights(Eigen::seq(0,lr_index));
+//     out.left_weights(Eigen::seq(lr_index+1, lr_max-1)) = em_b.left_weights(Eigen::seq(lr_index+1, lr_max-1));
+//     out.right_weights(Eigen::seq(0,lr_index)) = em_a.right_weights(Eigen::seq(0,lr_index));
+//     out.right_weights(Eigen::seq(lr_index+1,lr_max-1)) = em_b.right_weights(Eigen::seq(lr_index+1,lr_max-1));
+
+//     out.up_weights(Eigen::seq(0,ud_index)) = em_a.up_weights(Eigen::seq(0,ud_index));
+//     out.up_weights(Eigen::seq(ud_index+1,ud_max-1)) = em_b.up_weights(Eigen::seq(ud_index+1,ud_max-1));
+//     out.down_weights(Eigen::seq(0,ud_index)) = em_a.down_weights(Eigen::seq(0,ud_index));
+//     out.down_weights(Eigen::seq(ud_index+1,ud_max-1)) = em_b.down_weights(Eigen::seq(ud_index+1,ud_max-1));
+
+//     out.identity_weights(Eigen::seq(0,i_index)) = em_a.identity_weights(Eigen::seq(0,i_index));
+//     out.identity_weights(Eigen::seq(i_index,i_max-1)) = emb.identity_weights(Eigen::seq(i_index,i_max-1));
+// }
