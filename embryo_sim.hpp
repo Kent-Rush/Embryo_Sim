@@ -157,29 +157,32 @@ public:
     }
 };
 
-// template<int M, int N>
-// void splice(Embryo<M,N>& out, const Embryo<N,M>& em_a, const Embryo<N,M>& em_b)
-// {
-//     const int lr_max = M*(N-1);
-//     const int ud_max = (M-1)*N;
-//     const int i_max = M*N;
+template<int M, int N>
+void slice_mat(Eigen::Matrix<float,M,N>& out, const Eigen::Matrix<float,M,N>& in_a, const Eigen::Matrix<float,M,N>& in_b)
+{
+    std::random_device rd;  //Uniform random integer distribution
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> distrib_row(0, M-1);
+    std::uniform_int_distribution<size_t> distrib_col(0, N-1);
+    size_t rowmax = distrib_row(gen);
+    size_t colmax = distrib_col(gen);
+    
 
-//     size_t lr_index = Eigen::Rand::UniformIntGen<size_t>(0,M*(N-1));
-//     size_t ud_index = Eigen::Rand::UniformIntGen<size_t>(0,(M-1)*N);
-//     size_t i_index  = Eigen::Rand::UniformIntGen<size_t>(0,M*N);
+    out(Eigen::seq(0,rowmax), Eigen::seq(0,N-1)) = in_a(Eigen::seq(0,rowmax), Eigen::seq(0,N-1));
+    out(rowmax+1, Eigen::seq(0,colmax)) = in_a(rowmax+1, Eigen::seq(0,colmax));
+    out(rowmax+1, Eigen::seq(colmax+1,N-1)) = in_b(rowmax+1, Eigen::seq(colmax+1,N-1));
+    if (rowmax+2 != M)
+    {
+        out(Eigen::seq(rowmax+2,M-1), Eigen::seq(0,N-1)) = in_b(Eigen::seq(rowmax+2,M-1), Eigen::seq(0,N-1));
+    }
+}
 
-//     //I forgot these are not vectors q_q
-
-//     out.left_weights(Eigen::seq(0,lr_index)) = em_a.left_weights(Eigen::seq(0,lr_index));
-//     out.left_weights(Eigen::seq(lr_index+1, lr_max-1)) = em_b.left_weights(Eigen::seq(lr_index+1, lr_max-1));
-//     out.right_weights(Eigen::seq(0,lr_index)) = em_a.right_weights(Eigen::seq(0,lr_index));
-//     out.right_weights(Eigen::seq(lr_index+1,lr_max-1)) = em_b.right_weights(Eigen::seq(lr_index+1,lr_max-1));
-
-//     out.up_weights(Eigen::seq(0,ud_index)) = em_a.up_weights(Eigen::seq(0,ud_index));
-//     out.up_weights(Eigen::seq(ud_index+1,ud_max-1)) = em_b.up_weights(Eigen::seq(ud_index+1,ud_max-1));
-//     out.down_weights(Eigen::seq(0,ud_index)) = em_a.down_weights(Eigen::seq(0,ud_index));
-//     out.down_weights(Eigen::seq(ud_index+1,ud_max-1)) = em_b.down_weights(Eigen::seq(ud_index+1,ud_max-1));
-
-//     out.identity_weights(Eigen::seq(0,i_index)) = em_a.identity_weights(Eigen::seq(0,i_index));
-//     out.identity_weights(Eigen::seq(i_index,i_max-1)) = emb.identity_weights(Eigen::seq(i_index,i_max-1));
-// }
+template<int M, int N>
+void splice(Embryo<M,N>& out, const Embryo<N,M>& em_a, const Embryo<N,M>& em_b)
+{
+    slice_mat(out.left_weights, em_a.left_weights, em_b.left_weights);
+    slice_mat(out.right_weights, em_a.right_weights, em_b.right_weights);
+    slice_mat(out.up_weights, em_a.up_weights, em_b.up_weights);
+    slice_mat(out.right_weights, em_a.right_weights, em_b.right_weights);
+    slice_mat(out.identity_weights, em_a.identity_weights, em_b.identity_weights);
+}
