@@ -160,12 +160,8 @@ public:
 template<int M, int N>
 void slice_mat(Eigen::Matrix<float,M,N>& out, const Eigen::Matrix<float,M,N>& in_a, const Eigen::Matrix<float,M,N>& in_b)
 {
-    std::random_device rd;  //Uniform random integer distribution
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> distrib_row(0, M-1);
-    std::uniform_int_distribution<size_t> distrib_col(0, N-1);
-    size_t rowmax = distrib_row(gen);
-    size_t colmax = distrib_col(gen);
+    size_t rowmax = rand()%M;
+    size_t colmax = rand()%N;
     
     //Need to handle the case when rowmax or colmax is 0 because ::seq cant handle that
 
