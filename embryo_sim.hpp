@@ -51,35 +51,29 @@ public:
         down_weights = down_weights.Random()*scale;
     }
 
-    static void mutate(Embryo& embryo_out, Embryo& embryo_in)
+    void mutate(float k)
     {
-        float k = 1e-3;
-        embryo_out.identity_weights = embryo_in.identity_weights + embryo_in.identity_weights.Random()*k;
-        embryo_out.left_weights = embryo_in.left_weights + embryo_in.left_weights.Random()*k;
-        embryo_out.right_weights = embryo_in.right_weights + embryo_in.right_weights.Random()*k;
-        embryo_out.up_weights = embryo_in.up_weights + embryo_in.up_weights.Random()*k;
-        embryo_out.down_weights = embryo_in.down_weights + embryo_in.down_weights.Random()*k;
+        //identity_weights = identity_weights + embryo_in.identity_weights.Random()*k;
+        left_weights = left_weights + Matrix<float,ROWS,COLS-1>::Random()*k;
+        clip(left_weights,-1,1);
+        right_weights = right_weights + Matrix<float,ROWS,COLS-1>::Random()*k;
+        clip(right_weights,-1,1);
+        up_weights = up_weights + Matrix<float,ROWS-1,COLS>::Random()*k;
+        clip(up_weights,-1,1);
+        down_weights = down_weights + Matrix<float,ROWS-1,COLS>::Random()*k;
+        clip(down_weights,-1,1);
     }
 
     void round()
     {
-        for (int ii = 0; ii < ROWS; ii++)
-        {
-            for (int jj = 0; jj < COLS; jj++)
-            {
-                if (embryo(ii,jj) > 1)
-                {
-                    embryo(ii,jj) = 1;
-                }
-
-                if (embryo(ii,jj) < 0)
-                {
-                    embryo(ii,jj) = 0;
-                }
-
-                embryo(ii,jj) = std::round(embryo(ii,jj));
-            }
-        }
+        clip(embryo,0,1);
+        // for (int ii = 0; ii < ROWS; ii++)
+        // {
+        //     for (int jj = 0; jj < COLS; jj++)
+        //     {
+        //         //embryo(ii,jj) = std::round(embryo(ii,jj));
+        //     }
+        // }
     }
 
     void step()
@@ -135,7 +129,6 @@ public:
         }
 
         embryo = new_embryo;
-        round();
     }
 
     void generateImage(bitmap_image& img)
@@ -144,16 +137,38 @@ public:
         {
             for (int jj = 0; jj < COLS; jj++)
             {
-                if (std::abs(embryo(ii,jj) < 1e-6 ))
-                {
-                    img.set_pixel(ii, jj,255,255,255);
-                }
-                else
-                {
-                    img.set_pixel(ii, jj,0,0,0);
-                }
+                // if (embryo(ii,jj) < 0 )
+                // {
+                //     img.set_pixel(ii, jj,255,255,255);
+                // }
+                // else
+                // {
+                //     img.set_pixel(ii, jj,0,0,0);
+                // }
+                int val = static_cast<int>(255*(1-embryo(ii,jj)));
+                img.set_pixel(ii, jj,val,val,val);
             }
         }
+    }
+
+    template<int M, int N>
+    void clip(Eigen::Matrix<float,M,N>& out, float min, float max)
+    {
+        for (int ii = 0; ii < M; ii++)
+            {
+                for (int jj = 0; jj < N; jj++)
+                {
+                    if (out(ii,jj) > max)
+                    {
+                        out(ii,jj) = max;
+                    }
+
+                    if (out(ii,jj) < min)
+                    {
+                        out(ii,jj) = min;
+                    }
+                }
+            }
     }
 };
 
@@ -190,4 +205,19 @@ void splice(Embryo<M,N>& out, const Embryo<N,M>& em_a, const Embryo<N,M>& em_b)
     slice_mat(out.up_weights, em_a.up_weights, em_b.up_weights);
     slice_mat(out.down_weights, em_a.down_weights, em_b.down_weights);
     slice_mat(out.identity_weights, em_a.identity_weights, em_b.identity_weights);
+}
+
+template<int M, int N>
+float image_score(const Eigen::Matrix<float,M,N>& a, const Eigen::Matrix<float,M,N>& target)
+{
+    float val = 0;
+    for (int ii = 0; ii < M; ii++)
+    {
+        for (int jj = 0; jj < N; jj++)
+        {
+            float diff = a(ii,jj)-target(ii,jj);
+            val += diff*diff;
+        }
+    }
+    return std::sqrt(val);
 }
