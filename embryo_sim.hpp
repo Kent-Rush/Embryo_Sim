@@ -167,13 +167,22 @@ void slice_mat(Eigen::Matrix<float,M,N>& out, const Eigen::Matrix<float,M,N>& in
     size_t rowmax = distrib_row(gen);
     size_t colmax = distrib_col(gen);
     
+    //Need to handle the case when rowmax or colmax is 0 because ::seq cant handle that
 
-    out(Eigen::seq(0,rowmax), Eigen::seq(0,N-1)) = in_a(Eigen::seq(0,rowmax), Eigen::seq(0,N-1));
-    out(rowmax+1, Eigen::seq(0,colmax)) = in_a(rowmax+1, Eigen::seq(0,colmax));
-    out(rowmax+1, Eigen::seq(colmax+1,N-1)) = in_b(rowmax+1, Eigen::seq(colmax+1,N-1));
-    if (rowmax+2 != M)
+    if (rowmax != 0)
     {
-        out(Eigen::seq(rowmax+2,M-1), Eigen::seq(0,N-1)) = in_b(Eigen::seq(rowmax+2,M-1), Eigen::seq(0,N-1));
+        out(Eigen::seq(0,rowmax-1), Eigen::seq(0,N-1)) = in_a(Eigen::seq(0,rowmax-1), Eigen::seq(0,N-1));
+    }
+    
+    if (colmax != 0)
+    {
+        out(rowmax, Eigen::seq(0,colmax-1)) = in_a(rowmax, Eigen::seq(0,colmax-1));
+    }
+    
+    out(rowmax, Eigen::seq(colmax,N-1)) = in_b(rowmax, Eigen::seq(colmax,N-1));
+    if (rowmax+1 != M)
+    {
+        out(Eigen::seq(rowmax+1,M-1), Eigen::seq(0,N-1)) = in_b(Eigen::seq(rowmax+1,M-1), Eigen::seq(0,N-1));
     }
 }
 
@@ -183,6 +192,6 @@ void splice(Embryo<M,N>& out, const Embryo<N,M>& em_a, const Embryo<N,M>& em_b)
     slice_mat(out.left_weights, em_a.left_weights, em_b.left_weights);
     slice_mat(out.right_weights, em_a.right_weights, em_b.right_weights);
     slice_mat(out.up_weights, em_a.up_weights, em_b.up_weights);
-    slice_mat(out.right_weights, em_a.right_weights, em_b.right_weights);
+    slice_mat(out.down_weights, em_a.down_weights, em_b.down_weights);
     slice_mat(out.identity_weights, em_a.identity_weights, em_b.identity_weights);
 }
